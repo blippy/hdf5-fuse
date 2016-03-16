@@ -53,6 +53,14 @@ static int hdf5_fuse_getattr(const char* path, struct stat *stbuf)
   return 0;
 }
 
+// implemented by mcarter
+static int hdf5_fuse_mkdir(const char *path, mode_t mode  __attribute__ ((unused)))
+{
+	hid_t gid = H5Gcreate2(root_group, path, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	herr_t status = H5Gclose(gid);
+	return status; // 0 success, -1 failure, exactly as mkdir
+
+}
 static int hdf5_fuse_readdir(const char* path, void* buf, fuse_fill_dir_t filler,
     off_t offset, struct fuse_file_info *fi)
 {
@@ -106,6 +114,7 @@ static int hdf5_fuse_read(const char *path, char *buf, size_t size, off_t offset
 }
 
 static struct fuse_operations hdf5_oper = {
+  .mkdir = hdf5_fuse_mkdir,
   .getattr = hdf5_fuse_getattr,
   .readdir = hdf5_fuse_readdir,
   .open = hdf5_fuse_open,
@@ -127,7 +136,8 @@ int main(int argc, char** argv)
   }
 
   //Attempt to open hdf5 file
-  hid_t file = H5Fopen(argv[2], H5F_ACC_RDONLY, H5P_DEFAULT);
+  //hid_t file = H5Fopen(argv[2], H5F_ACC_RDONLY, H5P_DEFAULT);
+  hid_t file = H5Fopen(argv[2], H5F_ACC_RDWR, H5P_DEFAULT);
   if (file < 0) {
     printf("failed to open hdf5 file: %s\n", argv[2]);
     exit(1);
