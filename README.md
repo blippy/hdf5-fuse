@@ -9,3 +9,8 @@ Unpacking a dataset of doubles using python:
     import struct
     vals = [ x[0] for x in struct.iter_unpack("d", bytes)]
 
+Alternatively using UNIX command:
+
+    od -t f8 <DATASET>
+
+Possibly this has trouble with NAN's?
