@@ -9,7 +9,9 @@
 #include <hdf5.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <syslog.h>
 #include <string.h>
+#include <stdarg.h>
 
 hid_t root_group = -1;
 
@@ -58,6 +60,7 @@ static int hdf5_fuse_mkdir(const char *path, mode_t mode  __attribute__ ((unused
 {
 	hid_t gid = H5Gcreate2(root_group, path, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	herr_t status = H5Gclose(gid);
+	syslog(LOG_DEBUG, "mkdir %s %d", path, status);
 	return status; // 0 success, -1 failure, exactly as mkdir
 
 }
@@ -86,8 +89,9 @@ static int hdf5_fuse_readdir(const char* path, void* buf, fuse_fill_dir_t filler
 
 static int hdf5_fuse_open(const char *path, struct fuse_file_info *fi)
 {
-  if((fi->flags & 3) != O_RDONLY)
-    return -EACCES;
+	syslog(LOG_DEBUG, "open");
+	(void)fi;
+	//if((fi->flags & 3) != O_RDONLY) return -EACCES; // mcarter decided to relax read-only restrictions
 
   H5O_info_t obj_info;
   if(H5Oget_info_by_name(root_group, path, &obj_info, H5P_DEFAULT) < 0)
@@ -113,12 +117,60 @@ static int hdf5_fuse_read(const char *path, char *buf, size_t size, off_t offset
   return copy_size;
 }
 
+static int hdf5_fuse_write(const char *path, const char *buf, size_t size, off_t offset,
+		    struct fuse_file_info *fi)
+{
+	(void)path;
+	(void)buf;
+	(void)size;
+	(void)offset;
+	(void)fi;
+
+	syslog(LOG_DEBUG, "write TODO");
+	//int bytes_written = 0;
+	return size;
+}
+
+
+/* This seems like a critical function to implement if you want write access */
+static int hdf5_fuse_truncate(const char *path, off_t size)
+{
+	(void)path;
+	(void)size;
+	syslog(LOG_DEBUG, "truncate - currently just a stub"); 
+	return 0;
+}
+
+static int hdf5_fuse_ftruncate(const char *path, off_t size, struct fuse_file_info *fi)
+{
+	(void)path;
+	(void)size;
+	(void)fi;
+	syslog(LOG_DEBUG, "ftruncate TODO");
+	return 0;
+}
+
+static int hdf5_fuse_fallocate(const char *path, int  mode, off_t offset, off_t length,  struct fuse_file_info *fi)	
+{
+	(void)path;
+	(void)mode;
+	(void)offset;
+	(void)length;
+	(void)fi;
+	syslog(LOG_INFO, "fallocate: TODO. Currently always fails");
+	return -1;
+}
+
 static struct fuse_operations hdf5_oper = {
   .mkdir = hdf5_fuse_mkdir,
   .getattr = hdf5_fuse_getattr,
   .readdir = hdf5_fuse_readdir,
+  .truncate = hdf5_fuse_truncate,
   .open = hdf5_fuse_open,
   .read = hdf5_fuse_read,
+  .write = hdf5_fuse_write,
+  .ftruncate = hdf5_fuse_ftruncate,
+  .fallocate = hdf5_fuse_fallocate,
 };
 
 int main(int argc, char** argv)
@@ -127,6 +179,10 @@ int main(int argc, char** argv)
     printf("usage: %s <mount point> <hdf5 file>\n", argv[0]);
     exit(0);
   }
+
+  //log_msg("main");
+  openlog("hdf5-fuse", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+  syslog(LOG_NOTICE, "Program started");
 
   H5open();
   //Check for hdf5 file
@@ -148,5 +204,7 @@ int main(int argc, char** argv)
   int ret = fuse_main(argc - 1, argv, &hdf5_oper, NULL);
   H5Fclose(file);
   H5close();
+  syslog(LOG_NOTICE, "Program closing");
+  closelog();
   return ret;
 }
