@@ -32,27 +32,28 @@ size_t hdf5_fuse_filesize(const char* path)
 
 static int hdf5_fuse_getattr(const char* path, struct stat *stbuf)
 {
-  memset(stbuf, 0, sizeof(struct stat));
+	syslog(LOG_DEBUG, "getattr path %s", path);
+	memset(stbuf, 0, sizeof(struct stat));
 
-  H5O_info_t obj_info;
-  if(H5Oget_info_by_name(root_group, path, &obj_info, H5P_DEFAULT) < 0)
-    return -ENOENT;
+	H5O_info_t obj_info;
+	if(H5Oget_info_by_name(root_group, path, &obj_info, H5P_DEFAULT) < 0)
+		return -ENOENT;
 
-  if(obj_info.type == H5O_TYPE_GROUP) {
-    stbuf->st_mode = S_IFDIR | 0555;
-    H5G_info_t group_info;
-    H5Gget_info_by_name(root_group, path, &group_info, H5P_DEFAULT);
-    stbuf->st_nlink = 2 + group_info.nlinks;
-    stbuf->st_size = group_info.nlinks;
-  } else if (obj_info.type == H5O_TYPE_DATASET) {
-    stbuf->st_mode = S_IFREG | 0444;
-    stbuf->st_size = hdf5_fuse_filesize(path);
-  } else {
-    stbuf->st_mode = S_IFCHR | 0000;
-    stbuf->st_size = 0;
-  }
+	if(obj_info.type == H5O_TYPE_GROUP) {
+		stbuf->st_mode = S_IFDIR | 0777; // mcarter 0555; need to factor in if system is read-only
+		H5G_info_t group_info;
+		H5Gget_info_by_name(root_group, path, &group_info, H5P_DEFAULT);
+		stbuf->st_nlink = 2 + group_info.nlinks;
+		stbuf->st_size = group_info.nlinks;
+	} else if (obj_info.type == H5O_TYPE_DATASET) {
+		stbuf->st_mode = S_IFREG | 0666; // mcarter changed from  0444; but will prolly need to change it to something sensible
+		stbuf->st_size = hdf5_fuse_filesize(path);
+	} else {
+		stbuf->st_mode = S_IFCHR | 0000;
+		stbuf->st_size = 0;
+	}
 
-  return 0;
+	return 0;
 }
 
 // implemented by mcarter
@@ -103,18 +104,19 @@ static int hdf5_fuse_open(const char *path, struct fuse_file_info *fi)
 static int hdf5_fuse_read(const char *path, char *buf, size_t size, off_t offset,
     struct fuse_file_info *fi)
 {
-  (void) fi;
+	(void) fi;
+	syslog(LOG_DEBUG, "read: path %s, size %ld, offset %ld", path, size, offset);
 
-  hid_t dataset = H5Dopen(root_group, path, H5P_DEFAULT);
-  hid_t datatype = H5Dget_type(dataset);
-  size_t buf_size = hdf5_fuse_filesize(path);
-  char *hdf5_buf = malloc(buf_size);
-  H5Dread(dataset, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT, hdf5_buf);
-  size_t copy_size = buf_size - offset < size ? buf_size - offset : size;
-  memcpy(buf, hdf5_buf+offset, copy_size);
-  free(hdf5_buf);
-  H5Dclose(dataset);
-  return copy_size;
+	hid_t dataset = H5Dopen(root_group, path, H5P_DEFAULT);
+	hid_t datatype = H5Dget_type(dataset);
+	size_t buf_size = hdf5_fuse_filesize(path);
+	char *hdf5_buf = malloc(buf_size);
+	H5Dread(dataset, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT, hdf5_buf);
+	size_t copy_size = buf_size - offset < size ? buf_size - offset : size;
+	memcpy(buf, hdf5_buf+offset, copy_size);
+	free(hdf5_buf);
+	H5Dclose(dataset);
+	return copy_size;
 }
 
 static int hdf5_fuse_write(const char *path, const char *buf, size_t size, off_t offset,
@@ -126,9 +128,21 @@ static int hdf5_fuse_write(const char *path, const char *buf, size_t size, off_t
 	(void)offset;
 	(void)fi;
 
-	syslog(LOG_DEBUG, "write TODO");
-	//int bytes_written = 0;
-	return size;
+	// this algorithm is likely to be very inefficient. Consider using slabs
+	syslog(LOG_DEBUG, "write : path %s, size %ld, offset %ld", path, size, offset);
+	hid_t dataset = H5Dopen(root_group, path, H5P_DEFAULT);
+	hid_t datatype = H5Dget_type(dataset);
+	size_t buf_size = hdf5_fuse_filesize(path);
+	char *hdf5_buf = malloc(buf_size);
+	H5Dread(dataset, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT, hdf5_buf);
+	size_t copy_size = buf_size - offset < size ? buf_size - offset : size;
+	syslog(LOG_DEBUG, "copy size: %ld", copy_size);
+	memcpy(hdf5_buf+offset, buf, copy_size);
+	H5Dwrite(dataset, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT, hdf5_buf);
+	free(hdf5_buf);
+	H5Dclose(dataset);
+	syslog(LOG_DEBUG, "write exiting");
+	return copy_size;
 }
 
 
