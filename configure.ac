@@ -64,5 +64,5 @@ AM_COND_IF(DEBUG,
 
 
 # Wrapping it up
-AC_CONFIG_FILES([Makefile scripts/Makefile src/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile])
 AC_OUTPUT
