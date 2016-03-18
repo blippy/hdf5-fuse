@@ -1,4 +1,6 @@
-.PHONY: clean
+#.PHONY: clean
+
+bin_PROGRAMS = hdf5
 
 CFLAGS = -Wall -Wextra $(shell pkg-config --cflags fuse) -std=gnu99
 LDLIBS =-lhdf5 $(shell pkg-config --libs fuse)
@@ -8,5 +10,5 @@ SOURCES = main.c
 $(TARGET): $(SOURCES)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
-clean:
-	$(RM) $(TARGET)
+#clean:
+#	$(RM) $(TARGET)
