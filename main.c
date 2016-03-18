@@ -155,6 +155,16 @@ static int hdf5_fuse_truncate(const char *path, off_t size)
 	return 0;
 }
 
+
+static int hdf5_fuse_create(const char *path, mode_t size, struct fuse_file_info *fi)
+{
+	(void)path;
+	(void)size;
+	(void)fi;
+	syslog(LOG_DEBUG, "create TODO; path %s, mode %u", path, size);
+	return 0;
+
+}
 static int hdf5_fuse_ftruncate(const char *path, off_t size, struct fuse_file_info *fi)
 {
 	(void)path;
@@ -183,6 +193,7 @@ static struct fuse_operations hdf5_oper = {
   .open = hdf5_fuse_open,
   .read = hdf5_fuse_read,
   .write = hdf5_fuse_write,
+  .create = hdf5_fuse_create,
   .ftruncate = hdf5_fuse_ftruncate,
   .fallocate = hdf5_fuse_fallocate,
 };
