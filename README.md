@@ -1,6 +1,14 @@
 # hdf5-fuse
 
 
+HDF5-FUSE provides a FUSE driver and suite of programs for maniuplating HDF5 files. The programs mimic standard Linux filesystem
+utilities, and are likely to be useful in their own right, even if you decide not to use the FUSE driver.
+
+The utility programs are:
+
+* ```mkfs5``` - create an HDF5 file
+
+
 
 ## dunno
 
