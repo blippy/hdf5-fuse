@@ -6,26 +6,40 @@ utilities, and are likely to be useful in their own right, even if you decide no
 
 The utility programs are:
 
+* ```hdf5``` - mount an HDF5 file as a FUSE system
 * ```mkfs5``` - create an HDF5 file
+* ```rdd5``` - read as doubles
 
 
 
-## dunno
+## Quickstart
 
-Accessing HDF5 files using FUSE
+Create a mount point (e.g. ~/tmp) for your HDF5 file:
+
+    mkdir ~/tmp
+
+Mount your HDF5 file (e.g. my.h5) to the mount point:
+
+    hdf5 ~/tmp my.h5
+
+Explore the structure of the HDF5 file:
+
+    cd ~/tmp
+    ls
+    cd mygroup1 # etc
 
 
-Unpacking a dataset of doubles using python:
+Suppose DSET1 is a dataset containing information you are interested in. 
+You can view a raw dump of its contents by issuing the standard Linux command:
 
-    with open("doubles", "rb") as fp: bytes = fp.read()
-    import struct
-    vals = [ x[0] for x in struct.iter_unpack("d", bytes)]
+    xxd DSET1
 
-Alternatively using UNIX command:
+That may not be particularly helpful, though. If you know that DSET1 is an array of doubles, 
+then you can view it in text form, one line per value:
 
-    od -t f8 <DATASET>
+    rdd5 < DSET1
 
-Possibly this has trouble with NAN's?
+
 
 ## logging
 
