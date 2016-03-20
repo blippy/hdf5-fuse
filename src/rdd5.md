@@ -19,5 +19,5 @@ of doubles. To dump the dataset in human-readable form, issue the command:
 
 ## AUTHOR
 
-Mark Carter >alt.mcarter@gmail.com>
+Mark Carter <alt.mcarter@gmail.com>
 

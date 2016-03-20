@@ -13,6 +13,8 @@
 #include <string.h>
 #include <stdarg.h>
 
+#define STREQ(x, y) (strcmp(x, y) == 0)
+
 hid_t root_group = -1;
 
 size_t hdf5_fuse_filesize(const char* path)
@@ -145,6 +147,44 @@ static int hdf5_fuse_write(const char *path, const char *buf, size_t size, off_t
 	return copy_size;
 }
 
+static int hdf5_fuse_getxattr(const char* path, const char* name, char* value, size_t size)
+{
+	(void)path;
+	(void)name;
+	(void)value;
+	(void)size;
+	syslog(LOG_DEBUG, "getxattr path <%s>, name <%s>, size <%zu>", path, name, size);
+	if(value==NULL) { 
+//		syslog(LOG_DEBUG, "getxattr path <%s>, name <%s>, size <%zu>", path, name, size);
+		return 100; // TODO could perhaps be more specific on length
+	} else {
+		hid_t dataset = H5Dopen(root_group, path, H5P_DEFAULT);
+		hid_t sp = H5Dget_space(dataset);
+		hid_t dtype = H5Dget_type(dataset);
+		H5T_class_t class = H5Tget_class(dtype);
+		if(STREQ(name, "@N")) {
+			hssize_t npoints = H5Sget_simple_extent_npoints(sp);
+			snprintf(value, size-1, "%lld", npoints);
+		} else if (STREQ(name, "@T")) {
+			//hid_t ntype = H5Tget_native_type(dtype, H5T_DIR_DESCEND);
+			char tchar;
+			if(class == H5T_STRING) { tchar = 'S'; }
+			else if(class == H5T_FLOAT) { tchar = 'D' ; }
+			else { tchar = '?'; }
+			snprintf(value, size-1, "%c", tchar);
+			//H5Tclose(ntype);
+		} else if (STREQ(name, "@W")) {
+			if(class == H5T_STRING) { snprintf(value, size-1, "%lu", H5Tget_size(dtype));}
+			else { snprintf(value, size-1, "8"); /* an ASSUMPTION */ }
+		} else { 
+			snprintf(value, size-1, "%s", "?");
+		}
+		H5Tclose(dtype);
+		H5Sclose(sp);
+		H5Dclose(dataset);
+		return strlen(value);
+	}
+}
 
 /* This seems like a critical function to implement if you want write access */
 static int hdf5_fuse_truncate(const char *path, off_t size)
@@ -193,6 +233,7 @@ static struct fuse_operations hdf5_oper = {
   .open = hdf5_fuse_open,
   .read = hdf5_fuse_read,
   .write = hdf5_fuse_write,
+  .getxattr = hdf5_fuse_getxattr,
   .create = hdf5_fuse_create,
   .ftruncate = hdf5_fuse_ftruncate,
   .fallocate = hdf5_fuse_fallocate,

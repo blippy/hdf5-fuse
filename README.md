@@ -9,6 +9,7 @@ The utility programs are:
 * ```hdf5``` - mount an HDF5 file as a FUSE system
 * ```mkfs5``` - create an HDF5 file
 * ```rdd5``` - read as doubles
+* ```rdp5''' - read strings
 
 
 
@@ -39,7 +40,29 @@ then you can view it in text form, one line per value:
 
     rdd5 < DSET1
 
+If DSET1 is a dataset of strings, then they can be dumped out, one line per string:
 
+    rdp5 DSET
+
+Note that you cannot use redirection from stdin using rds5, because meta-information is required
+
+## Attributes
+
+There is currently fledgling support for reading file attributes. User-defined attributes cannot (yet) be
+inspected. No attributes can be written.
+
+Attributes are obtained by running the standard UNIX command getfattr. Atrributes recognised are:
+* ```@T``` - the type of the dataset; either ```S``` for string, ```D``` for double, or ```?``` otherwise
+* ```@N``` - the number of elements/points in a dataset
+* ```@W``` - width; the max num of chars in a string, assumed 8 for a double, or ```?``` otherwise
+
+Example usage:
+
+    getfattr -n @T file
+
+Notes that the ```@``` is reserved for properties of the dataset itself. You can never set them, because
+the dataset properties are fixed upon creation. The prefix ```~``` will probably be used for
+user-definable properties.
 
 ## logging
 

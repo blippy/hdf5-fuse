@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.69])
 AC_INIT([hdf5-fuse], [0.1], [alt.mcarter@gmail.com])
-AC_CONFIG_SRCDIR([src/main.c])
+AC_CONFIG_SRCDIR([src/driver.c])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([foreign])
 PKG_PROG_PKG_CONFIG
@@ -30,7 +30,7 @@ CFLAGS="$EXTERNAL_CFLAGS"
 
 # Checks for libraries.
 #PKG_CHECK_MODULES([HDF5], [hdf5])
-
+PKG_CHECK_MODULES([FUSE], [fuse])
 
 # Checks for header files.
 AC_HEADER_STDC
