@@ -107,7 +107,7 @@ static int hdf5_fuse_read(const char *path, char *buf, size_t size, off_t offset
     struct fuse_file_info *fi)
 {
 	(void) fi;
-	syslog(LOG_DEBUG, "read: path %s, size %ld, offset %ld", path, size, offset);
+	syslog(LOG_DEBUG, "read: path %s, size %zu, offset %zu", path, size, (size_t)offset);
 
 	hid_t dataset = H5Dopen(root_group, path, H5P_DEFAULT);
 	hid_t datatype = H5Dget_type(dataset);
@@ -131,14 +131,14 @@ static int hdf5_fuse_write(const char *path, const char *buf, size_t size, off_t
 	(void)fi;
 
 	// this algorithm is likely to be very inefficient. Consider using slabs
-	syslog(LOG_DEBUG, "write : path %s, size %ld, offset %ld", path, size, offset);
+	syslog(LOG_DEBUG, "write : path %s, size %zu, offset %zu", path, size, (size_t)offset);
 	hid_t dataset = H5Dopen(root_group, path, H5P_DEFAULT);
 	hid_t datatype = H5Dget_type(dataset);
 	size_t buf_size = hdf5_fuse_filesize(path);
 	char *hdf5_buf = malloc(buf_size);
 	H5Dread(dataset, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT, hdf5_buf);
 	size_t copy_size = buf_size - offset < size ? buf_size - offset : size;
-	syslog(LOG_DEBUG, "copy size: %ld", copy_size);
+	syslog(LOG_DEBUG, "copy size: %zu", copy_size);
 	memcpy(hdf5_buf+offset, buf, copy_size);
 	H5Dwrite(dataset, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT, hdf5_buf);
 	free(hdf5_buf);
@@ -174,7 +174,7 @@ static int hdf5_fuse_getxattr(const char* path, const char* name, char* value, s
 			snprintf(value, size-1, "%c", tchar);
 			//H5Tclose(ntype);
 		} else if (STREQ(name, "@W")) {
-			if(class == H5T_STRING) { snprintf(value, size-1, "%lu", H5Tget_size(dtype));}
+			if(class == H5T_STRING) { snprintf(value, size-1, "%zu", H5Tget_size(dtype));}
 			else { snprintf(value, size-1, "8"); /* an ASSUMPTION */ }
 		} else { 
 			snprintf(value, size-1, "%s", "?");
