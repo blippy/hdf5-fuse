@@ -64,10 +64,16 @@ Notes that the ```@``` is reserved for properties of the dataset itself. You can
 the dataset properties are fixed upon creation. The prefix ```~``` will probably be used for
 user-definable properties.
 
-## logging
+## Logging
 
 hdf5-fuse has some logging. It uses the syslog. If you are running systemd, you can view the logging "on the fly" by executing this command:
 
     journalctl -f | grep hdf5-fuse
 
+## Resources
 
+* [cpan:fuse](http://search.cpan.org/dist/Fuse/Fuse.pm#fallocate) - perl's implementation of fuse - but actually useful as a general reference document
+* [CS135 fuse documentation](https://www.cs.hmc.edu/~geoff/classes/hmc.cs135.201001/homework/fuse/fuse_doc.html) - looks like a more complete list for ```fuse_operations```
+* [fuse-examplefs](https://github.com/blippy/fuse-examplefs) - skeleton example of using fuse
+* [fuse_operations struct reference](http://fuse.sourcearchive.com/documentation/2.7.0/structfuse__operations.html) - exluded fallocate, ftruncate, and probably a few other funcs
+* [private data](http://www.cs.nmsu.edu/~pfeiffer/fuse-tutorial/html/private.html)
